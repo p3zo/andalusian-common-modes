@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__
+.ipynb_checkpoints/
+
+env_file
+
+paper
+
+assets/
+
+data/documents
