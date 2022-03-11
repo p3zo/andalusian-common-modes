@@ -1,3 +1,5 @@
+Tools for analyzing metadata in the [Arab-Andalusian music corpus](https://zenodo.org/record/1291776#.YC0i0XmCEuW), adapted from [MTG/andalusian-corpus-notebooks](https://github.com/MTG/andalusian-corpus-notebooks).
+
 ## Usage
 
 Install the dependencies.
