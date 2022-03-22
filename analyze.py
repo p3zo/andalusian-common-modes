@@ -1,12 +1,15 @@
 """Adapted from https://github.com/MTG/andalusian-corpus-notebooks/blob/master/utilities/metadataStatistics.py"""
 
+import collections
+import itertools
 import json
 import os
-from collections import defaultdict
+import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from music21 import converter, interval
 
 from utils.constants import (
@@ -19,6 +22,9 @@ from utils.constants import (
     RECORDINGS_DIR,
 )
 from utils.generalUtilities import get_interval, get_seconds
+
+pd.set_option("display.max_rows", None)
+sns.set_style()
 
 
 def get_recordings_df():
@@ -57,7 +63,7 @@ def get_df_list():
     df_list = []
     id_name = "uuid"
 
-    # NB: indexes of the following dataframes are the 'uuid' of every object in the json file
+    # NB: indexes of the following dataframes are the id of every object in the json file
     for i in range(1, 5):
         # create a dataframe for each list
         columns = [i for i in COLUMNS_NAMES[0:3] if i != "display_order"]
@@ -141,15 +147,20 @@ def get_description_df(recordings_df):
     return description_df
 
 
-def plot_intervals(tm_intervals):
+def plot_intervals(pair_intervals, tab):
+    """Create a figure with subplots for each interval distribution of a given tab"""
+    fig = plt.figure(figsize=(12, 4))
 
-    for tm, intervals in tm_intervals.items():
-        tab, mizan = tm.split("_")
+    intervals_by_mizan = [
+        (k.split("_")[1], v) for k, v in pair_intervals.items() if tab in k
+    ]
 
-        # To order the intervals
-        # Create a dictionary with the equivalence of each interval's size in semitones and its name
+    for ix, (mizan, mizan_intervals) in enumerate(intervals_by_mizan):
+        print(f"Plotting {tab} with {mizan}")
+        # To order the intervals, create a dict with the equivalence of
+        # each interval's size in semitones and its name
         ordered_intervals = {}
-        for k in intervals.keys():
+        for k in mizan_intervals.keys():
             itv = interval.Interval(k)
             ordered_intervals[itv.semitones] = k
 
@@ -160,57 +171,71 @@ def plot_intervals(tm_intervals):
         xTicks = [ordered_intervals[i] for i in xValues]
 
         # Ordered list of y axis values
-        yValues = np.array([intervals[i] for i in xTicks])
+        yValues = np.array([mizan_intervals[i] for i in xTicks])
 
         # Normalize yValues for better comparison
-        yValues = yValues / sum(yValues)
+        n_intervals = sum(yValues)
+        print(f"  Num intervals: {n_intervals}")
+        yValues = yValues / n_intervals
 
         # Create the subplot
-        # plt.subplot(311 + intervals.index(tab))
-        plt.bar(xValues, yValues)
+        plt.subplot(int(f"1{len(intervals_by_mizan)}{ix+1}"))
+        plt.bar(xValues, yValues, zorder=3)
         plt.xticks(xValues, xTicks)
+        plt.grid(zorder=0, axis="y", lw=0.25)
 
         # Common x and y axes limits
         plt.xlim(-1, 13)
         plt.ylim(0, 0.5)
-        plt.ylabel("percent of intervals")
-        plt.title(f"{tab} with {mizan}")
+        plt.title(mizan)
         plt.tight_layout()
 
-        filepath = os.path.join(PLOT_DIR, f"{tm}.png")
-        plt.savefig(filepath)
-        plt.clf()
-        print(f"  Saved {filepath}")
+    # Create a big subplot for shared labels
+    ax = fig.add_subplot(111, frameon=False)
+    plt.tick_params(labelcolor="none", top="off", bottom="off", left="off", right="off")
+    ax.set_title(tab, pad=25)
+    ax.set_ylabel("percent of intervals", labelpad=8)
+    plt.tight_layout()
+
+    filepath = os.path.join(PLOT_DIR, f"{tab}.png")
+    plt.savefig(filepath)
+    print(f"  Saved {filepath}")
+
+    plt.clf()
 
 
 if __name__ == "__main__":
-    df_tab, df_nawba, df_mizan, df_form = get_df_list()
-
-    recordings_df = get_recordings_df()
-
-    # TODO: why does description_df have only 158 unique mbids when the description file has 164?
-    description_df = get_description_df(recordings_df)
-
     description_data = get_description_data()
 
-    # How does the distribution of intervals played in a particular melodic mode
-    # change when a particular rhythmic mode is being played?
-    mode_pairs = [
-        ["al-istihlāl", "qdām"],
-        ["al-istihlāl", "basīṭ"],
-        ["al-istihlāl", "bṭāyḥī"],
-        ["rumil al-māīyah", "qdām"],
-        ["rumil al-māīyah", "basīṭ"],
-        ["rumil al-māīyah", "bṭāyḥī"],
-    ]
+    # How does the distribution of intervals played in a melodic mode change
+    # when different rhythmic modes are being played?
+    tubu = ["al-istihlāl", "rumil al-māīyah"]
+    mawazin = ["qdām", "basīṭ", "bṭāyḥī"]
 
-    intervals = defaultdict(dict)
+    mode_pairs = itertools.product(tubu, mawazin)
+
+    # Make the transliterated english names consistent with other sources
+    name_mapping = {
+        "basīṭ": "basít",
+        "qdām": "quddám",
+        "rumil al-māīyah": "raml al-maya",
+        "al-istihlāl": "al-istihlāl",
+        "bṭāyḥī": "btāyhī",
+    }
+
+    # Initialize a nested dict for {pair_name: {intervals}}
+    intervals = collections.defaultdict(dict)
+
+    # Also keep track of how many scores the combined pairs are used in
+    n_scores = collections.defaultdict(int)
 
     for mode_pair in mode_pairs:
         print(mode_pair)
 
         tab, mizan = mode_pair
-        tab_mizan = f"{tab}_{mizan}"
+        tab_name = name_mapping[tab]
+        mizan_name = name_mapping[mizan]
+        pair_name = f"{tab_name}_{mizan_name}"
 
         # Get the times of sections of interest from the performance metadata
         mode_pair_sections = {}
@@ -234,6 +259,7 @@ if __name__ == "__main__":
             nr = s.flat.notesAndRests.stream()
 
             score = mode_pair_sections[mbid]
+            n_scores[pair_name] += 1
 
             for section in score:
                 tab = section["tab"]["transliterated_name"]
@@ -248,8 +274,12 @@ if __name__ == "__main__":
                     # All notes are included, even grace notes
                     if n.isNote and n.next().isNote:
                         itv = interval.Interval(n, n.next())
-                        intervals[tab_mizan][itv.name] = (
-                            intervals[tab_mizan].get(itv.name, 0) + 1
+                        intervals[pair_name][itv.name] = (
+                            intervals[pair_name].get(itv.name, 0) + 1
                         )
 
-    plot_intervals(intervals)
+    for tab in tubu:
+        plot_intervals(intervals, name_mapping[tab])
+
+    print("Number of scores by mode pair:")
+    pprint.pprint(n_scores)
