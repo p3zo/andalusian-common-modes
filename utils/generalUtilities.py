@@ -1,10 +1,6 @@
 """Adapted from https://github.com/MTG/andalusian-corpus-notebooks/blob/master/utilities/generalutilities.py"""
 
-import os
 import time
-import zipfile
-
-import numpy as np
 
 
 def get_interval(end, start):

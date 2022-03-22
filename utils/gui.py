@@ -9,7 +9,6 @@ from IPython.display import display
 from .constants import CHARACTERISTICS_NAMES, COLUMNS_NAMES, DF_LISTS, STATISTIC_TYPE
 from .generalUtilities import get_time
 
-
 # -------------------------------------------------- DATAFRAME --------------------------------------------------
 
 

@@ -427,16 +427,7 @@ class CollectionMetadata:
             ind = self.df_description.loc[i, row_type]
             col = self.df_description.loc[i, column_type]
 
-            # STATISTIC_TYPE = ['# recordings', '# sections', 'overall sections time', 'avg sections time']
             if statistic_type == STATISTIC_TYPE[0]:
-                # num recordings
-                # if i == 0:
-                # df_cross.loc[ind, col] += 1
-                # else:
-                # if self.df_description.loc[i, COLUMNS_DESCRIPTION[0]] != self.df_description.loc[
-                # i - 1, COLUMNS_DESCRIPTION[0]]:
-                # df_cross.loc[ind, col] += 1
-                # end of incorrect part
                 if self.df_description.loc[i, COLUMNS_DESCRIPTION[0]] != mbid_temp:
                     df_cross.loc[ind, col] += 1
                     mbid_temp = self.df_description.loc[i, COLUMNS_DESCRIPTION[0]]

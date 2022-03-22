@@ -3,10 +3,11 @@
 import os
 
 
-# change parameters here to customize the directories where data will be stored.
-# NB: the source directory is the main directory of the notebook
-DATA_DIR = "data"
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+
+DATA_DIR = os.path.join(THIS_DIR, "../data")
 RECORDINGS_DIR = os.path.join(DATA_DIR, "documents")
+PLOT_DIR = os.path.join(THIS_DIR, "../plots")
 
 # prefix applied to json file with the information from Dunya or derived by them
 PREFIX_JSON = "andalusian_"

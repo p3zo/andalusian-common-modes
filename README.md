@@ -8,7 +8,9 @@ Install the dependencies.
 pip install -r requirements.txt
 ```
 
-Launch the `analysis.ipynb` notebook.
+Launch the `explore_metadata.ipynb` notebook to explore interactive tables and charts of the corpus metadata.
+
+Run `analyze.py` to create the plots in the [plots](./plots) directory.
 
 ## Data
 
